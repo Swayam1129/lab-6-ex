@@ -1,1 +1,19 @@
 Answer written questions here:
+1. Starting from a low iteration count means each frame finishes quickly. Every pixel's
+mandelbrotSmooth call has to return before the frame can be shown, so a low maxIters gives the
+user a rough image right away and keeps panning and zooming responsive. Detail is then refined over
+the next frames (by doubling) only while the view stays still, instead of freezing on one expensive
+3200-iteration frame every time the view changes.
+
+2. Since each pixel is independent, split the image into tiles (e.g. blocks of rows) and have a
+coordinator hand each tile, along with the world bounds and maxIters, to a pool of worker threads,
+cores, or machines. The coordinator waits for all of them to finish and writes their results into the
+buffer. Handing tiles out dynamically from a queue balances the load, since tiles near the set's
+boundary/interior take many more iterations than tiles far outside it.
+
+3. Visually, averaging 4 sub-pixel samples is supersampling anti-aliasing: it smooths the jaggies
+along the set's boundary and turns the speckled noise in high-frequency regions into a smoother
+average colour that better reflects what the pixel covers. For performance, it needs 4x as many
+mandelbrotSmooth calls per frame, so rendering takes roughly 4 times longer (plus a small cost for
+averaging), which hurts responsiveness unless it is only applied once the view has stopped moving
+or is combined with parallelism.
